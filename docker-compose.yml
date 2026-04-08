@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: utopia-db
+    restart: always
+    environment:
+      POSTGRES_USER: utopia
+      POSTGRES_PASSWORD: utopiasecret
+      POSTGRES_DB: utopiadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - utopia-db-data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: utopia-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://utopia:utopiasecret@db:5432/utopiadb?schema=public
+      - JWT_SECRET=CHANGE_ME_TO_A_VERY_LONG_RANDOM_STRING
+    depends_on:
+      - db
+
+volumes:
+  utopia-db-data:

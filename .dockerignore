@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env
+local_database.db
+prisma/local_database.db
+README.md
+Start_App.command
+release
+release/
+dist
+out
