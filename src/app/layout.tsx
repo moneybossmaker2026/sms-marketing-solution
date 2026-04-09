@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { getSession } from "@/lib/auth";
 import { Sidebar } from "@/components/Sidebar";
 
+export const dynamic = "force-dynamic"; 
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
