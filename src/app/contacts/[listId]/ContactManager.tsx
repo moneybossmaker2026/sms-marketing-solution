@@ -16,7 +16,7 @@ type Contact = { id: string; phone: string; firstName: string | null; lastName: 
 export default function ContactManager({ listId, initialContacts }: { listId: string, initialContacts: Contact[] }) {
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const[editingId, setEditingId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   const [targets, setTargets] = useState([{ phone: "", firstName: "", lastName: "" }]);
@@ -86,7 +86,8 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
                 <UserPlus className="w-4 h-4 mr-2" /> Add Multiple Targets
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-card border-border shadow-2xl overflow-hidden p-0">
+            {/* FIX: Set strictly wide constraints for the dialog */}
+            <DialogContent className="sm:max-w-[800px] w-[95vw] bg-card border-border shadow-2xl overflow-hidden p-0">
               <DialogHeader className="px-6 py-4 border-b border-border bg-accent/30">
                 <DialogTitle className="text-foreground font-bold">Inject Manual Targets</DialogTitle>
               </DialogHeader>
@@ -129,7 +130,6 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
         </div>
 
         <Table>
-          {/* ... Rest of the ContactManager Table code remains exactly the same ... */}
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent bg-accent/30">
               <TableHead className="h-11 px-6 font-medium text-foreground">Phone</TableHead>
@@ -170,7 +170,7 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-card border-border">
+                    <DialogContent className="sm:max-w-[425px] bg-card border-border">
                       <DialogHeader><DialogTitle>Edit Contact Data</DialogTitle></DialogHeader>
                       <form onSubmit={(e) => handleEdit(c.id, e)} className="space-y-4 pt-4">
                         <div className="space-y-2">

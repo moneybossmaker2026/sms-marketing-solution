@@ -69,8 +69,15 @@ export async function GET(req: Request) {
         try { parsedHeaders = JSON.parse(api.headers || "{}"); } catch (e) {}
 
         const safeMessage = JSON.stringify(finalMessage).slice(1, -1);
+
+        // DYNAMIC PHONE VARIABLES PARSING
+        const phoneNoPlus = contact.phone.replace(/^\+/, "");
+        const phone00 = "00" + phoneNoPlus;
+
         let parsedPayload = api.payload;
         parsedPayload = parsedPayload.replace(/{{phone}}/g, contact.phone);
+        parsedPayload = parsedPayload.replace(/{{phone_no_plus}}/g, phoneNoPlus);
+        parsedPayload = parsedPayload.replace(/{{phone_00}}/g, phone00);
         parsedPayload = parsedPayload.replace(/{{message}}/g, safeMessage);
 
         try {
@@ -123,7 +130,7 @@ export async function GET(req: Request) {
     for (const campaignId of Array.from(processedCampaignIds)) {
       if (!campaignId) continue;
       const remainingPending = await db.messageLog.count({
-        where: { campaignId, status: { in: ["PENDING", "QUEUED_FOR_SENDING"] } }
+        where: { campaignId, status: { in:["PENDING", "QUEUED_FOR_SENDING"] } }
       });
 
       if (remainingPending === 0) {

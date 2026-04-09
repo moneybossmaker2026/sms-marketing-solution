@@ -38,7 +38,7 @@ export default function EditApiModal({ api }: { api: ApiType }) {
           <Edit className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="sm:max-w-[550px] bg-card border-border">
         <DialogHeader>
           <DialogTitle>Edit Gateway: {api.name}</DialogTitle>
         </DialogHeader>
@@ -59,6 +59,9 @@ export default function EditApiModal({ api }: { api: ApiType }) {
           <div className="space-y-2">
             <Label>Payload (JSON)</Label>
             <textarea name="payload" defaultValue={api.payload} required className="w-full h-24 p-3 rounded-md bg-background border border-input text-[13px] focus:ring-2 focus:ring-[#A229C5] outline-none font-mono" />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Variables: <code className="text-foreground">{"{{phone}}"}</code> (+123), <code className="text-foreground">{"{{phone_no_plus}}"}</code> (123), <code className="text-foreground">{"{{phone_00}}"}</code> (00123), <code className="text-foreground">{"{{message}}"}</code>
+            </p>
           </div>
           <Button type="submit" disabled={loading} className="w-full mt-2 bg-gradient-to-r from-[#00D2FF] to-[#A229C5] text-white font-bold">
             {loading ? "Saving..." : "Save Changes"}

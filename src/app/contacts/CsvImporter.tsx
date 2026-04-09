@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, Loader2, Save, Trash2, Edit3, ChevronLeft, ChevronRight, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { UploadCloud, Save, Trash2, Edit3, ChevronLeft, ChevronRight, FileSpreadsheet, CheckCircle2 } from "lucide-react";
 
-export default function CsvImporter({ listId, listName, maxRows = 10000 }: { listId: string; listName: string; maxRows: number }) {
+export default function CsvImporter({ listId, listName, maxRows = 10000 }: { listId: string; listName: string, maxRows?: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const[progress, setProgress] = useState(0);
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [step, setStep] = useState<"UPLOAD" | "REVIEW">("UPLOAD");
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +34,7 @@ export default function CsvImporter({ listId, listName, maxRows = 10000 }: { lis
           return toast.error("CSV must contain a 'phone' column header.");
         }
         if (rows.length > maxRows) {
-          return toast.error(`File too large. Maximum allowed is ${maxRows.toLocaleString()} contacts per file.`);
+          return toast.error(`File too large. Maximum allowed is ${maxRows.toLocaleString()} contacts.`);
         }
         setParsedData(rows.map((row, i) => ({ ...row, _id: i })));
         setCurrentPage(1);
@@ -95,7 +95,8 @@ export default function CsvImporter({ listId, listName, maxRows = 10000 }: { lis
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[1200px] w-[95vw] bg-card border-border shadow-2xl p-0 overflow-hidden flex flex-col">
+      {/* FIX: Added sm:max-w-[1000px] to make it much wider */}
+      <DialogContent className="sm:max-w-[1000px] w-[95vw] bg-card border-border shadow-2xl p-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-4 border-b border-border bg-accent/30">
           <DialogTitle className="flex items-center gap-2 text-foreground font-bold">
             {step === "UPLOAD" ? (
@@ -139,10 +140,10 @@ export default function CsvImporter({ listId, listName, maxRows = 10000 }: { lis
 
               <div className="border border-border rounded-lg overflow-hidden flex flex-col flex-1 max-h-[50vh]">
                 <div className="overflow-y-auto flex-1 bg-background relative">
-                  <Table className="relative">
+                  <Table className="relative min-w-[600px]">
                     <TableHeader className="bg-accent/50 sticky top-0 z-10 shadow-sm backdrop-blur-sm">
                       <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="w-[100px] text-center font-bold text-muted-foreground">Row</TableHead>
+                        <TableHead className="w-[80px] text-center font-bold text-muted-foreground">Row</TableHead>
                         <TableHead className="font-bold text-foreground">Phone (Required)</TableHead>
                         <TableHead className="font-bold text-foreground">First Name</TableHead>
                         <TableHead className="font-bold text-foreground">Last Name</TableHead>
