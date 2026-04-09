@@ -135,6 +135,7 @@ model SmsApi {
   payload   String
   isActive  Boolean  @default(true)
   failCount Int      @default(0)
+  lastError String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

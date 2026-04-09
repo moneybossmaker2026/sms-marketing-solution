@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { addSingleContact, updateContact, removeContactFromList } from "../actions";
+import { addMultipleContacts, updateContact, removeContactFromList } from "../actions";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Pencil, Trash2, Ban } from "lucide-react";
+import { Search, UserPlus, Pencil, Trash2, Ban, PlusCircle, Save } from "lucide-react";
 
 type Contact = { id: string; phone: string; firstName: string | null; lastName: string | null; isOptOut: boolean; };
 
@@ -17,6 +17,9 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const [targets, setTargets] = useState([{ phone: "", firstName: "", lastName: "" }]);
 
   const filteredContacts = initialContacts.filter(c =>
     c.phone.includes(search) ||
@@ -24,16 +27,28 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
     (c.lastName?.toLowerCase() || "").includes(search.toLowerCase())
   );
 
-  const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const addRow = () => setTargets([...targets, { phone: "", firstName: "", lastName: "" }]);
+
+  const removeRow = (index: number) => {
+    if (targets.length === 1) return;
+    setTargets(targets.filter((_, i) => i !== index));
+  };
+
+  const updateRow = (index: number, field: string, value: string) => {
+    const newTargets = [...targets];
+    (newTargets[index] as any)[field] = value;
+    setTargets(newTargets);
+  };
+
+  const handleSaveMultiple = async () => {
     setAdding(true);
-    const formData = new FormData(e.currentTarget);
     try {
-      await addSingleContact(listId, formData);
-      toast.success("Contact added to list.");
-      (e.target as HTMLFormElement).reset();
+      const added = await addMultipleContacts(listId, targets);
+      toast.success(`${added} target(s) successfully injected into audience.`);
+      setTargets([{ phone: "", firstName: "", lastName: "" }]);
+      setIsOpen(false);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Failed to inject targets.");
     } finally {
       setAdding(false);
     }
@@ -65,40 +80,56 @@ export default function ContactManager({ listId, initialContacts }: { listId: st
             />
           </div>
 
-          <Dialog>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-[#00D2FF] to-[#A229C5] text-white">
-                <UserPlus className="w-4 h-4 mr-2" /> Add Single Target
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-[#00D2FF] to-[#A229C5] text-white shadow-md">
+                <UserPlus className="w-4 h-4 mr-2" /> Add Multiple Targets
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
-              <DialogHeader>
-                <DialogTitle>Add Manual Target</DialogTitle>
+            <DialogContent className="max-w-4xl bg-card border-border shadow-2xl overflow-hidden p-0">
+              <DialogHeader className="px-6 py-4 border-b border-border bg-accent/30">
+                <DialogTitle className="text-foreground font-bold">Inject Manual Targets</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAdd} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>Phone Number (with Country Code)</Label>
-                  <Input name="phone" required placeholder="+12345678900" className="bg-background focus-visible:ring-[#00D2FF]" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>First Name (Optional)</Label>
-                    <Input name="firstName" placeholder="John" className="bg-background focus-visible:ring-[#00D2FF]" />
+
+              <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4 bg-background">
+                {targets.map((t, i) => (
+                  <div key={i} className="flex gap-4 items-center bg-accent/20 p-3 rounded-lg border border-border">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase">Phone Number</Label>
+                      <Input value={t.phone} onChange={(e) => updateRow(i, 'phone', e.target.value)} placeholder="+1234567890" className="bg-background focus-visible:ring-[#00D2FF] font-mono" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase">First Name</Label>
+                      <Input value={t.firstName} onChange={(e) => updateRow(i, 'firstName', e.target.value)} placeholder="Optional" className="bg-background" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase">Last Name</Label>
+                      <Input value={t.lastName} onChange={(e) => updateRow(i, 'lastName', e.target.value)} placeholder="Optional" className="bg-background" />
+                    </div>
+                    <div className="pt-5">
+                      <Button variant="ghost" size="icon" onClick={() => removeRow(i)} disabled={targets.length === 1} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Last Name (Optional)</Label>
-                    <Input name="lastName" placeholder="Doe" className="bg-background focus-visible:ring-[#00D2FF]" />
-                  </div>
-                </div>
-                <Button type="submit" disabled={adding} className="w-full mt-2">
-                  {adding ? "Adding..." : "Save Contact"}
+                ))}
+                <Button variant="outline" onClick={addRow} className="w-full border-dashed border-2 hover:bg-accent/50 text-muted-foreground">
+                  <PlusCircle className="w-4 h-4 mr-2" /> Add Another Row
                 </Button>
-              </form>
+              </div>
+
+              <div className="px-6 py-4 border-t border-border bg-accent/10 flex justify-end gap-3">
+                <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveMultiple} disabled={adding} className="bg-gradient-to-r from-[#00D2FF] to-[#A229C5] text-white">
+                  <Save className="w-4 h-4 mr-2" /> {adding ? "Injecting..." : "Save All Targets"}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
 
         <Table>
+          {/* ... Rest of the ContactManager Table code remains exactly the same ... */}
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent bg-accent/30">
               <TableHead className="h-11 px-6 font-medium text-foreground">Phone</TableHead>

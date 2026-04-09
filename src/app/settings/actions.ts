@@ -34,6 +34,21 @@ export async function createSmsApi(formData: FormData) {
   revalidatePath("/settings");
 }
 
+export async function updateSmsApi(formData: FormData) {
+  await verifyAdmin();
+  const id = formData.get("id") as string;
+  const name = formData.get("name") as string;
+  const url = formData.get("url") as string;
+  const headers = formData.get("headers") as string;
+  const payload = formData.get("payload") as string;
+
+  await db.smsApi.update({
+    where: { id },
+    data: { name, url, headers, payload }
+  });
+  revalidatePath("/settings");
+}
+
 export async function deleteSmsApi(id: string) {
   await verifyAdmin();
   await db.smsApi.delete({ where: { id } });

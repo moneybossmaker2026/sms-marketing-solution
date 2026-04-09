@@ -5,10 +5,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  
-  // const { searchParams } = new URL(req.url);
-  // if (searchParams.get("token") !== process.env.CRON_SECRET) return new NextResponse("Unauthorized", { status: 401 });
-
   const BATCH_SIZE = 150;
 
   try {
@@ -85,7 +81,17 @@ export async function GET(req: Request) {
           });
 
           if (!response.ok) {
-            const dbApi = await db.smsApi.update({ where: { id: api.id }, data: { failCount: { increment: 1 } } });
+            const errorText = await response.text().catch(() => "Unknown error");
+            const errorMessage = `[HTTP ${response.status}] ${errorText.substring(0, 500)}`;
+
+            const dbApi = await db.smsApi.update({
+              where: { id: api.id },
+              data: {
+                failCount: { increment: 1 },
+                lastError: errorMessage
+              }
+            });
+
             if (dbApi.failCount >= 5) {
               await db.smsApi.update({ where: { id: api.id }, data: { isActive: false } });
               availableApis = availableApis.filter(a => a.id !== api.id);
@@ -131,7 +137,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ status: "success", processed: logsToProcess.length });
 
   } catch (error: any) {
-    console.error("[CRON Worker Error]:", error);
     return NextResponse.json({ status: "error", message: error.message }, { status: 500 });
   }
 }

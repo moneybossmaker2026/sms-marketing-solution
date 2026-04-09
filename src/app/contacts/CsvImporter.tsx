@@ -91,11 +91,11 @@ export default function CsvImporter({ listId, listName, maxRows = 10000 }: { lis
     <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) { setStep("UPLOAD"); setParsedData([]); } }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 bg-background text-foreground border-border hover:bg-accent hover:text-foreground">
-          <UploadCloud className="w-4 h-4 mr-2 text-[#00D2FF]" /> Import CSV
+          <UploadCloud className="w-4 h-4 mr-2 text-[#00D2FF]" /> Upload Contacts File
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-5xl bg-card border-border shadow-2xl p-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[1200px] w-[95vw] bg-card border-border shadow-2xl p-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-4 border-b border-border bg-accent/30">
           <DialogTitle className="flex items-center gap-2 text-foreground font-bold">
             {step === "UPLOAD" ? (

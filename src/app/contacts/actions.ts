@@ -173,3 +173,38 @@ export async function removeContactFromList(listId: string, contactId: string) {
   revalidatePath(`/contacts/${listId}`);
   revalidatePath("/contacts");
 }
+
+export async function addMultipleContacts(listId: string, contacts: { phone: string; firstName: string; lastName: string }[]) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
+
+  let addedCount = 0;
+
+  for (const c of contacts) {
+    if (!c.phone.trim()) continue;
+
+    let validPhone = c.phone.trim();
+    if (!validPhone.startsWith("+")) validPhone = "+" + validPhone.replace(/\D/g, "");
+
+    try {
+      const dbContact = await db.contact.upsert({
+        where: { userId_phone: { userId: session.userId, phone: validPhone } },
+        update: { firstName: c.firstName || undefined, lastName: c.lastName || undefined },
+        create: { userId: session.userId, phone: validPhone, firstName: c.firstName || "", lastName: c.lastName || "" }
+      });
+
+      const existingLink = await db.listContact.findUnique({
+        where: { listId_contactId: { listId, contactId: dbContact.id } }
+      });
+
+      if (!existingLink) {
+        await db.listContact.create({ data: { listId, contactId: dbContact.id } });
+        addedCount++;
+      }
+    } catch (error) {}
+  }
+
+  revalidatePath(`/contacts/${listId}`);
+  revalidatePath("/contacts");
+  return addedCount;
+}

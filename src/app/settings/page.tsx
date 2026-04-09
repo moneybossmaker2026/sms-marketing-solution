@@ -21,7 +21,10 @@ export default async function SettingsPage() {
       name: true,
       url: true,
       isActive: true,
-      failCount: true
+      failCount: true,
+      headers: true,
+      payload: true,
+      lastError: true  
     },
     orderBy: {
       createdAt: "desc"
