@@ -18,7 +18,7 @@ type User = {
 };
 
 export default function EditUserModal({ user }: { user: User }) {
-  const [open, setOpen] = useState(false);
+  const[open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,7 +69,7 @@ export default function EditUserModal({ user }: { user: User }) {
           <div className="space-y-2">
             <Label>Exact Wallet Balance ($)</Label>
             <Input name="balance" type="number" step="0.01" min="0" defaultValue={user.balance} required className="bg-background focus-visible:ring-[#A229C5]" />
-            <p className="text-[11px] text-muted-foreground">This will overwrite the user's current balance completely.</p>
+            <p className="text-[11px] text-muted-foreground">This will overwrite the user&apos;s current balance completely.</p>
           </div>
           <Button type="submit" disabled={loading} className="w-full mt-2 bg-gradient-to-r from-[#00D2FF] to-[#A229C5] text-white">
             {loading ? "Saving..." : "Save Changes"}
