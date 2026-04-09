@@ -7,7 +7,13 @@ const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || "utopia_su
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/r/")) {
+  if (
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/r/") ||
+    pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/api/webhook")
+  ) {
     return NextResponse.next();
   }
 
