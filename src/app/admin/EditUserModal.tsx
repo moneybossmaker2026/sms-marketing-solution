@@ -67,7 +67,7 @@ export default function EditUserModal({ user }: { user: User }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Exact Wallet Balance ($)</Label>
+            <Label>Exact Wallet Balance (€)</Label>
             <Input name="balance" type="number" step="0.01" min="0" defaultValue={user.balance} required className="bg-background focus-visible:ring-[#A229C5]" />
             <p className="text-[11px] text-muted-foreground">This will overwrite the user&apos;s current balance completely.</p>
           </div>

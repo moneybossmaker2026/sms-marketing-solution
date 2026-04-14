@@ -54,7 +54,7 @@ export function SidebarBalance() {
 
         <div>
           <p className="text-2xl font-bold text-foreground mt-0 tracking-tight">
-            ${balance.toFixed(2)}
+            €{balance.toFixed(2)}
           </p>
         </div>
 

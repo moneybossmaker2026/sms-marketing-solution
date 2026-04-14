@@ -119,7 +119,7 @@ export default async function AdminPage() {
                     <form action={addBalance} className="inline-flex items-center gap-1 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
                       <input type="hidden" name="userId" value={user.id} />
                       <Input
-                        name="amount" type="number" step="0.01" min="0.01" placeholder="$0.00" required
+                        name="amount" type="number" step="0.01" min="0.01" placeholder="€0.00" required
                         className="w-20 h-8 bg-background text-xs font-mono focus-visible:ring-[#00D2FF]"
                       />
                       <Button variant="outline" size="sm" type="submit" className="h-8 w-8 p-0 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-500" title="Add Funds Fast">

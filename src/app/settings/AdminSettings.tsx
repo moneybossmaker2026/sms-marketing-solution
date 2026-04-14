@@ -49,7 +49,7 @@ export default function AdminSettings({ settings, apis }: { settings: Record<str
         <CardContent className="pt-6">
           <div className="grid gap-6 md:grid-cols-3 items-end">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground"><DollarSign className="w-3.5 h-3.5" /> Network SMS Price ($)</Label>
+              <Label className="flex items-center gap-2 text-muted-foreground"><DollarSign className="w-3.5 h-3.5" /> Network SMS Price (€)</Label>
               <Input type="number" step="0.001" value={smsPrice} onChange={(e) => setSmsPrice(e.target.value)} className="bg-background focus-visible:ring-[#00D2FF] font-mono" />
             </div>
             <div className="space-y-2">

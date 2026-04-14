@@ -148,7 +148,7 @@ export default function CampaignBuilder({ lists, templates, smsPrice, onLaunch }
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Network Rate per SMS:</span>
-                  <span className="font-semibold text-foreground">${smsPrice}</span>
+                  <span className="font-semibold text-foreground">€{smsPrice}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold mt-2 pt-2 border-t border-border/50">
                   <span>Required Wallet Balance:</span>

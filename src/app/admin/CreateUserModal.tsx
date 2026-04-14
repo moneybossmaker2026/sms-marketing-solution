@@ -63,7 +63,7 @@ export default function CreateUserModal() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Starting Balance ($)</Label>
+            <Label>Starting Balance (€)</Label>
             <Input name="balance" type="number" step="0.01" defaultValue="0.00" required className="bg-background focus-visible:ring-[#A229C5]" />
           </div>
           <Button type="submit" disabled={loading} className="w-full mt-2 bg-foreground text-background hover:bg-foreground/90 font-bold">

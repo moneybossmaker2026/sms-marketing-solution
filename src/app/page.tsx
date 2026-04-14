@@ -145,7 +145,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00D2FF] to-[#A229C5] tracking-tight">
-                  ${totalCost.toFixed(2)}
+                  €{totalCost.toFixed(2)}
                 </span>
               </div>
             </CardContent>
