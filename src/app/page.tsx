@@ -107,7 +107,7 @@ export default async function DashboardPage() {
               </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-4xl font-black text-foreground tracking-tight">{bounceRate}%</span>
+              <span className="text-4xl font-black text-foreground tracking-tight">{parseFloat(Number(bounceRate).toFixed(2))}%</span>
               <span className="text-xs font-medium text-muted-foreground bg-accent px-2 py-0.5 rounded-full">{totalFailed} drops</span>
             </div>
           </CardContent>
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className={`text-4xl font-black tracking-tight ${providerBalance.status === "success" ? "text-emerald-500" : "text-muted-foreground"}`}>
-                  {providerBalance.status === "not_configured" ? "N/A" : providerBalance.balance}
+                  {providerBalance.status === "not_configured" ? "N/A" : parseFloat(providerBalance.balance).toString()}
                 </span>
                 {providerBalance.status === "success" && <span className="text-xs font-bold text-muted-foreground">CREDITS</span>}
               </div>
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-4">
              <div className="flex items-end gap-3">
-              <div className="text-5xl font-black text-foreground">{100 - Number(bounceRate)}%</div>
+              <div className="text-5xl font-black text-foreground">{(100 - Number(bounceRate)).toFixed(2)}%</div>
               <div className="mb-2 text-sm text-muted-foreground font-medium uppercase tracking-wider">Success Rate</div>
             </div>
             <div className="mt-8 h-3 w-full bg-accent rounded-full overflow-hidden flex border border-border shadow-inner">
