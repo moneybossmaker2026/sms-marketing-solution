@@ -29,11 +29,13 @@ export default async function DashboardPage() {
       const { headers } = await import("next/headers");
       const host = headers().get("host");
       const proto = process.env.NODE_ENV === "production" ? "https" : "http";
-      const res = await fetch(`${proto}://${host}/api/admin/provider-balance`, {
+      const res = await fetch(`${proto}://${host}/api/provider-balance`, {
         headers: { Cookie: headers().get("cookie") || "" }
       });
       providerBalance = await res.json();
-    } catch (e) {}
+    } catch (e) {
+      console.error("Failed to fetch provider balance", e);
+    }
   }
 
   const recentCampaigns = await db.campaign.findMany({
