@@ -23,6 +23,19 @@ export default async function DashboardPage() {
   const costAggregate = await db.messageLog.aggregate({ where: { userId }, _sum: { cost: true } });
   const totalCost = costAggregate._sum.cost || 0.0;
 
+  let providerBalance = null;
+  if (session.role === "ADMIN") {
+    try {
+      const { headers } = await import("next/headers");
+      const host = headers().get("host");
+      const proto = process.env.NODE_ENV === "production" ? "https" : "http";
+      const res = await fetch(`${proto}://${host}/api/admin/provider-balance`, {
+        headers: { Cookie: headers().get("cookie") || "" }
+      });
+      providerBalance = await res.json();
+    } catch (e) {}
+  }
+
   const recentCampaigns = await db.campaign.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -98,23 +111,44 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border-border bg-card shadow-sm group hover:border-[#A229C5]/50 transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#A229C5]/10 to-[#00D2FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#00D2FF] to-[#A229C5]" />
-          <CardContent className="p-6 relative z-10">
-             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Spend</span>
-              <div className="p-2 rounded-md bg-accent/50 border border-border text-foreground group-hover:text-[#A229C5] transition-colors">
-                <Coins className="w-4 h-4" />
+        {session.role === "ADMIN" && providerBalance ? (
+          <Card className="relative overflow-hidden border-border bg-card shadow-sm group hover:border-emerald-500/50 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-emerald-500/50" />
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">EJOIN Provider Balance</span>
+                <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 transition-colors">
+                  <Coins className="w-4 h-4" />
+                </div>
               </div>
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00D2FF] to-[#A229C5] tracking-tight">
-                ${totalCost.toFixed(2)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className={`text-4xl font-black tracking-tight ${providerBalance.status === "success" ? "text-emerald-500" : "text-muted-foreground"}`}>
+                  {providerBalance.status === "not_configured" ? "N/A" : providerBalance.balance}
+                </span>
+                {providerBalance.status === "success" && <span className="text-xs font-bold text-muted-foreground">CREDITS</span>}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="relative overflow-hidden border-border bg-card shadow-sm group hover:border-[#A229C5]/50 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#A229C5]/10 to-[#00D2FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#00D2FF] to-[#A229C5]" />
+            <CardContent className="p-6 relative z-10">
+               <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Spend</span>
+                <div className="p-2 rounded-md bg-accent/50 border border-border text-foreground group-hover:text-[#A229C5] transition-colors">
+                  <Coins className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00D2FF] to-[#A229C5] tracking-tight">
+                  ${totalCost.toFixed(2)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       </div>
 

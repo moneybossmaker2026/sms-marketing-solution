@@ -9,12 +9,14 @@ export const dynamic = "force-dynamic";
 
 export default function CampaignsPage() {
   const [lists, setLists] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [smsPrice, setSmsPrice] = useState(0.07);
-  const [activeTab, setActiveTab] = useState<"CREATE" | "TRACKER">("CREATE");
+  const[activeTab, setActiveTab] = useState<"CREATE" | "TRACKER">("CREATE");
 
   useEffect(() => {
     fetch('/api/user/lists').then(res => res.json()).then(data => setLists(data)).catch(() => {});
     fetch('/api/user/config').then(res => res.json()).then(data => setSmsPrice(data.smsPrice)).catch(() => {});
+    fetch('/api/user/templates').then(res => res.json()).then(data => setTemplates(data)).catch(() => {});
   }, []);
 
   return (
@@ -37,7 +39,7 @@ export default function CampaignsPage() {
 
       <div className="pt-4">
         {activeTab === "CREATE" ? (
-          <CampaignBuilder lists={lists} smsPrice={smsPrice} onLaunch={() => setActiveTab("TRACKER")} />
+          <CampaignBuilder lists={lists} templates={templates} smsPrice={smsPrice} onLaunch={() => setActiveTab("TRACKER")} />
         ) : (
           <SequenceTracker />
         )}

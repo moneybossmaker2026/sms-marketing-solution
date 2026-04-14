@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, MessageSquare, Users, Shield, Settings, LogOut, Menu, X, UserCircle } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Shield, Settings, LogOut, Menu, X, UserCircle, FileText } from "lucide-react";
 import { logoutAction } from "@/app/actions";
 import { SidebarBalance } from "./SidebarBalance";
 
@@ -11,11 +11,11 @@ export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
+  const navItems =[
     { href: "/", label: "Overview", icon: LayoutDashboard },
     { href: "/campaigns", label: "Campaigns", icon: MessageSquare },
     { href: "/contacts", label: "Audiences", icon: Users },
-    // { href: "/links", label: "Tracking", icon: Radar },
+    { href: "/templates", label: "Templates", icon: FileText }, // NEW TEMPLATES LINK
     { href: "/profile", label: "My Profile", icon: UserCircle },
   ];
 

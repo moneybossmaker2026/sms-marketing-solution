@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 
-export async function createDraftCampaign(name: string, listId: string, messageBody: string) {
+export async function createDraftCampaign(name: string, listId: string, messageBody: string, senderId?: string) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
 
@@ -14,6 +14,7 @@ export async function createDraftCampaign(name: string, listId: string, messageB
       name,
       listId,
       messageBody,
+      senderId: senderId || null,
       status: "DRAFT",
     }
   });

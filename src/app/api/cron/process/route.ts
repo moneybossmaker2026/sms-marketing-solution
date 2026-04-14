@@ -14,9 +14,7 @@ export async function GET(req: Request) {
       select: { id: true }
     });
 
-    if (pendingLogs.length === 0) {
-      return NextResponse.json({ status: "idle", message: "Queue Empty" });
-    }
+    if (pendingLogs.length === 0) return NextResponse.json({ status: "idle", message: "Queue Empty" });
 
     const logIds = pendingLogs.map(l => l.id);
 
@@ -30,114 +28,167 @@ export async function GET(req: Request) {
       include: { contact: true, campaign: true }
     });
 
-    let availableApis = await db.smsApi.findMany({ where: { isActive: true } });
+    const availableApis = await db.smsApi.findMany({ where: { isActive: true } });
+
+    const logsByApi = new Map<string, typeof logsToProcess>();
+    logsToProcess.forEach(log => {
+      const api = availableApis.length > 0 ? availableApis[Math.floor(Math.random() * availableApis.length)] : null;
+      if (!api) return;
+      if (!logsByApi.has(api.id)) logsByApi.set(api.id,[]);
+      logsByApi.get(api.id)!.push(log);
+    });
+
     const { default: PQueue } = await import("p-queue");
     const queue = new PQueue({ concurrency: 15 });
 
     const priceSetting = await db.setting.findUnique({ where: { key: "SMS_PRICE" } });
     const perSmsCost = priceSetting ? parseFloat(priceSetting.value) : 0.07;
-
     const processedCampaignIds = new Set<string>();
 
-    await Promise.all(logsToProcess.map((log) =>
-      queue.add(async () => {
-        processedCampaignIds.add(log.campaignId!);
-        const { contact, campaign, userId } = log;
+    logsByApi.forEach((logs, apiId) => {
+      const api = availableApis.find(a => a.id === apiId)!;
+      let isEjoin = false;
+      let ejoinData: any = {};
 
-        if (availableApis.length === 0 || contact.isOptOut) {
-          await db.$transaction([
-            db.messageLog.update({
-              where: { id: log.id },
-              data: { status: "FAILED", error: contact.isOptOut ? "Opt-Out Skipped" : "No Active APIs" }
-            }),
-            db.user.update({
-              where: { id: userId },
-              data: { balance: { increment: perSmsCost } }
-            })
-          ]);
-          return;
-        }
+      try {
+        const pObj = JSON.parse(api.payload);
+        if (pObj.isEjoin) { isEjoin = true; ejoinData = pObj; }
+      } catch (e) {}
 
-        const api = availableApis[Math.floor(Math.random() * availableApis.length)];
+      if (isEjoin) {
+        // --- NATIVE EJOIN BATCH PROCESSING ---
+        queue.add(async () => {
+          logs.forEach(l => processedCampaignIds.add(l.campaignId!));
+          const validLogs = logs.filter(l => !l.contact.isOptOut);
+          const optOutLogs = logs.filter(l => l.contact.isOptOut);
 
-        let finalMessage = campaign?.messageBody || "";
-        finalMessage = finalMessage.replace(/{{firstName}}/g, contact.firstName || "");
-        finalMessage = finalMessage.replace(/{{lastName}}/g, contact.lastName || "");
-        finalMessage = finalMessage.replace(/{{contactId}}/g, contact.id);
-
-        let parsedHeaders = {};
-        try { parsedHeaders = JSON.parse(api.headers || "{}"); } catch (e) {}
-
-        const safeMessage = JSON.stringify(finalMessage).slice(1, -1);
-
-        // DYNAMIC PHONE VARIABLES PARSING
-        const phoneNoPlus = contact.phone.replace(/^\+/, "");
-        const phone00 = "00" + phoneNoPlus;
-
-        let parsedPayload = api.payload;
-        parsedPayload = parsedPayload.replace(/{{phone}}/g, contact.phone);
-        parsedPayload = parsedPayload.replace(/{{phone_no_plus}}/g, phoneNoPlus);
-        parsedPayload = parsedPayload.replace(/{{phone_00}}/g, phone00);
-        parsedPayload = parsedPayload.replace(/{{message}}/g, safeMessage);
-
-        try {
-          const response = await fetch(api.url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...parsedHeaders },
-            body: parsedPayload,
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => "Unknown error");
-            const errorMessage = `[HTTP ${response.status}] ${errorText.substring(0, 500)}`;
-
-            const dbApi = await db.smsApi.update({
-              where: { id: api.id },
-              data: {
-                failCount: { increment: 1 },
-                lastError: errorMessage
-              }
-            });
-
-            if (dbApi.failCount >= 5) {
-              await db.smsApi.update({ where: { id: api.id }, data: { isActive: false } });
-              availableApis = availableApis.filter(a => a.id !== api.id);
-            }
-            throw new Error("API Route Failed");
+          for (const l of optOutLogs) {
+             await db.$transaction([
+                db.messageLog.update({ where: { id: l.id }, data: { status: "FAILED", error: "Opt-Out" } }),
+                db.user.update({ where: { id: l.userId }, data: { balance: { increment: perSmsCost } } })
+             ]);
           }
 
-          await db.smsApi.update({ where: { id: api.id }, data: { failCount: 0 } });
-          await db.messageLog.update({
-            where: { id: log.id },
-            data: { status: "SENT" }
+          if (validLogs.length === 0) return;
+
+          const smsarray = validLogs.map(log => {
+            let finalMessage = log.campaign?.messageBody || "";
+            finalMessage = finalMessage.replace(/{{firstName}}/g, log.contact.firstName || "");
+            finalMessage = finalMessage.replace(/{{lastName}}/g, log.contact.lastName || "");
+
+            // Format EJOIN payload (Strips '+' from numbers automatically)
+            const payloadObj: any = {
+              content: finalMessage,
+              smstype: 0,
+              numbers: log.contact.phone.replace(/^\+/, "")
+            };
+
+            // Add senderId if the campaign has one
+            if (log.campaign?.senderId) {
+                payloadObj.sender = log.campaign.senderId;
+            }
+            return payloadObj;
           });
 
-        } catch (error: any) {
-          await db.$transaction([
-            db.messageLog.update({
-              where: { id: log.id },
-              data: { status: "FAILED", error: "API Rotation Error" }
-            }),
-            db.user.update({
-              where: { id: userId },
-              data: { balance: { increment: perSmsCost } }
-            })
-          ]);
-        }
-      })
-    ));
+          const baseUrl = api.url.endsWith('/') ? api.url.slice(0, -1) : api.url;
+          const targetUrl = baseUrl.endsWith('sendsms') ? baseUrl : `${baseUrl}/sendsms`;
 
-    for (const campaignId of Array.from(processedCampaignIds)) {
-      if (!campaignId) continue;
-      const remainingPending = await db.messageLog.count({
-        where: { campaignId, status: { in:["PENDING", "QUEUED_FOR_SENDING"] } }
-      });
+          const ejoinPayload = {
+            account: ejoinData.account,
+            password: ejoinData.password,
+            smsarray
+          };
 
-      if (remainingPending === 0) {
-        await db.campaign.update({
-          where: { id: campaignId },
-          data: { status: "COMPLETED" }
+          try {
+            const res = await fetch(targetUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json;charset=utf-8" },
+              body: JSON.stringify(ejoinPayload)
+            });
+            const result = await res.json();
+
+            if (result.status === 0) {
+              await db.messageLog.updateMany({
+                where: { id: { in: validLogs.map(l => l.id) } },
+                data: { status: "SENT" }
+              });
+              await db.smsApi.update({ where: { id: api.id }, data: { failCount: 0 } });
+            } else {
+              throw new Error(`EJOIN Code: ${result.status}`);
+            }
+          } catch (error: any) {
+             const errStr = error.message.substring(0, 200);
+             await db.smsApi.update({ where: { id: api.id }, data: { failCount: { increment: 1 }, lastError: errStr } });
+             for (const l of validLogs) {
+               await db.$transaction([
+                  db.messageLog.update({ where: { id: l.id }, data: { status: "FAILED", error: "EJOIN Batch Failed" } }),
+                  db.user.update({ where: { id: l.userId }, data: { balance: { increment: perSmsCost } } })
+               ]);
+             }
+          }
         });
+      } else {
+        // --- GENERIC 1-BY-1 PROCESSING ---
+        logs.forEach((log) => {
+          queue.add(async () => {
+             processedCampaignIds.add(log.campaignId!);
+             const { contact, campaign, userId } = log;
+
+             if (contact.isOptOut) {
+               await db.$transaction([
+                 db.messageLog.update({ where: { id: log.id }, data: { status: "FAILED", error: "Opt-Out" } }),
+                 db.user.update({ where: { id: userId }, data: { balance: { increment: perSmsCost } } })
+               ]);
+               return;
+             }
+
+             let finalMessage = campaign?.messageBody || "";
+             finalMessage = finalMessage.replace(/{{firstName}}/g, contact.firstName || "");
+             finalMessage = finalMessage.replace(/{{lastName}}/g, contact.lastName || "");
+
+             let parsedHeaders = {};
+             try { parsedHeaders = JSON.parse(api.headers || "{}"); } catch (e) {}
+
+             const safeMessage = JSON.stringify(finalMessage).slice(1, -1);
+             const phoneNoPlus = contact.phone.replace(/^\+/, "");
+             const phone00 = "00" + phoneNoPlus;
+
+             let parsedPayload = api.payload;
+             parsedPayload = parsedPayload.replace(/{{phone}}/g, contact.phone);
+             parsedPayload = parsedPayload.replace(/{{phone_no_plus}}/g, phoneNoPlus);
+             parsedPayload = parsedPayload.replace(/{{phone_00}}/g, phone00);
+             parsedPayload = parsedPayload.replace(/{{message}}/g, safeMessage);
+             parsedPayload = parsedPayload.replace(/{{senderId}}/g, campaign?.senderId || "");
+
+             try {
+               const res = await fetch(api.url, { method: "POST", headers: { "Content-Type": "application/json", ...parsedHeaders }, body: parsedPayload });
+               if (!res.ok) throw new Error("HTTP " + res.status);
+
+               await db.smsApi.update({ where: { id: api.id }, data: { failCount: 0 } });
+               await db.messageLog.update({ where: { id: log.id }, data: { status: "SENT" } });
+             } catch (error: any) {
+               await db.smsApi.update({ where: { id: api.id }, data: { failCount: { increment: 1 }, lastError: error.message } });
+               await db.$transaction([
+                 db.messageLog.update({ where: { id: log.id }, data: { status: "FAILED", error: "HTTP Failed" } }),
+                 db.user.update({ where: { id: userId }, data: { balance: { increment: perSmsCost } } })
+               ]);
+             }
+          });
+        });
+      }
+    });
+
+    await queue.onIdle();
+
+    const uniqueCampaignIds: string[] =[];
+    processedCampaignIds.forEach(id => {
+      if (id && !uniqueCampaignIds.includes(id)) uniqueCampaignIds.push(id);
+    });
+
+    for (const campaignId of uniqueCampaignIds) {
+      const remainingPending = await db.messageLog.count({ where: { campaignId, status: { in:["PENDING", "QUEUED_FOR_SENDING"] } } });
+      if (remainingPending === 0) {
+        await db.campaign.update({ where: { id: campaignId }, data: { status: "COMPLETED" } });
       }
     }
 
